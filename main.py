@@ -1,8 +1,8 @@
 import math
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS  # Tambahkan CORS
 
-app = Flask(__name__, static_folder='static')  # Tambahkan static_folder
+app = Flask(__name__)  # Tidak perlu tentukan static_folder di sini
 CORS(app)  # Aktifkan CORS untuk menerima request dari HTML
 
 # Fungsi menghitung jarak Haversine
@@ -77,9 +77,11 @@ def calculate():
         print("Error:", e)
         return jsonify({'error': str(e)}), 400
 
+# Fungsi untuk merender file HTML dari luar folder static
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    # Ganti 'index.html' dengan path yang sesuai dengan lokasi file HTML kamu
+    return send_from_directory('', 'index.html')  # Mengambil file index.html yang ada di root folder
 
 if __name__ == '__main__':
     app.run(debug=True)
