@@ -61,6 +61,8 @@ def calculate():
         lon1 = float(data['lon1'])
         lat2 = float(data['lat2'])
         lon2 = float(data['lon2'])
+        
+        print(f"Received: lat1={lat1}, lon1={lon1}, lat2={lat2}, lon2={lon2}")
 
         # Hitung jarak, azimuth, dan jalur interpolasi
         distance = haversine(lat1, lon1, lat2, lon2)
@@ -73,6 +75,7 @@ def calculate():
             'points': [[point[0], point[1]] for point in points]
         })
     except Exception as e:
+        print("Error:", e)
         return jsonify({'error': str(e)}), 400
 
 # Endpoint untuk menghidangkan file HTML
