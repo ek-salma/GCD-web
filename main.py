@@ -1,10 +1,11 @@
 import math
-import os  # Tambahkan untuk membaca environment variable
+import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Tambahkan CORS
+from flask_cors import CORS  # Untuk mengaktifkan CORS (akses dari domain lain)
 
-app = Flask(__name__, static_folder='static')  # Tambahkan static_folder
-CORS(app)  # Aktifkan CORS untuk menerima request dari HTML
+# Inisialisasi Flask
+app = Flask(__name__, static_folder='static')  # Folder 'static' untuk file HTML
+CORS(app)  # Aktifkan CORS
 
 # Fungsi menghitung jarak Haversine
 def haversine(lat1, lon1, lat2, lon2):
@@ -50,16 +51,16 @@ def interpolate_points(lat1, lon1, lat2, lon2, num_points=100):
         points.append((math.degrees(lat), math.degrees(lon)))
     return points
 
-# Endpoint untuk menghitung jarak dan interpolasi
+# Endpoint untuk menghitung jarak, azimuth, dan interpolasi
 @app.route('/calculate', methods=['POST'])
 def calculate():
     try:
-        lat1 = float(request.form['lat1'])
-        lon1 = float(request.form['lon1'])
-        lat2 = float(request.form['lat2'])
-        lon2 = float(request.form['lon2'])
-
-        print(f"Received: lat1={lat1}, lon1={lon1}, lat2={lat2}, lon2={lon2}")
+        # Ambil data JSON dari request body
+        data = request.get_json()
+        lat1 = float(data['lat1'])
+        lon1 = float(data['lon1'])
+        lat2 = float(data['lat2'])
+        lon2 = float(data['lon2'])
 
         # Hitung jarak, azimuth, dan jalur interpolasi
         distance = haversine(lat1, lon1, lat2, lon2)
@@ -72,13 +73,14 @@ def calculate():
             'points': [[point[0], point[1]] for point in points]
         })
     except Exception as e:
-        print("Error:", e)
         return jsonify({'error': str(e)}), 400
 
+# Endpoint untuk menghidangkan file HTML
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
 
+# Menjalankan aplikasi
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Baca port dari environment variable
-    app.run(host='0.0.0.0', port=port, debug=True)  # Pastikan host adalah 0.0.0.0
+    app.run(host='0.0.0.0', port=port, debug=True)  # Host di 0.0.0.0 untuk menerima semua koneksi
