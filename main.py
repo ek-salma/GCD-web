@@ -1,4 +1,5 @@
 import math
+import os  # Tambahkan untuk membaca environment variable
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Tambahkan CORS
 
@@ -16,8 +17,6 @@ def haversine(lat1, lon1, lat2, lon2):
     return round(R * c, 2)
 
 # Fungsi menghitung azimuth awal
-import math
-
 def calculate_azimuth(lat1, lon1, lat2, lon2):
     d_lon = math.radians(lon2 - lon1)
     lat1 = math.radians(lat1)
@@ -30,7 +29,6 @@ def calculate_azimuth(lat1, lon1, lat2, lon2):
     initial_bearing = math.degrees(initial_bearing)
     compass_bearing = (initial_bearing + 360) % 360  # Normalize to 0-360 degrees
     return compass_bearing
-
 
 # Fungsi interpolasi jalur Great Circle
 def interpolate_points(lat1, lon1, lat2, lon2, num_points=100):
@@ -82,4 +80,5 @@ def index():
     return app.send_static_file('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))  # Baca port dari environment variable
+    app.run(host='0.0.0.0', port=port, debug=True)  # Pastikan host adalah 0.0.0.0
