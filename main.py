@@ -56,7 +56,10 @@ def interpolate_points(lat1, lon1, lat2, lon2, num_points=100):
 def calculate():
     try:
         # Ambil data JSON dari request body
-        data = request.get_json()
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form  # Support x-www-form-urlencoded
         lat1 = float(data['lat1'])
         lon1 = float(data['lon1'])
         lat2 = float(data['lat2'])

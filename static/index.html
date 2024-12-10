@@ -151,7 +151,7 @@
             var lon2 = markers[1].getLatLng().lng;
 
             // Kirim data ke Flask
-            $.post("http://127.0.0.1:5000/calculate", { lat1, lon1, lat2, lon2 })
+            $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
             .done(function(response) {
                 var distance = response.distance;
                 var azimuth = response.azimuth;  // Ambil nilai azimuth dari Flask
