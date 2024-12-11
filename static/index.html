@@ -51,7 +51,6 @@
             <h4>Azimuth:</h4>
             <p id="azimuth">0°</p>
 
-
             <h4>Petunjuk:</h4>
             <ol>
                 <li>Klik pada peta untuk menambahkan marker.</li>
@@ -145,7 +144,7 @@
                 });
         }
 
-        // Fungsi untuk menghitung jarak dan azimuth
+        // Fungsi untuk menggambar garis geodesic
         function calculateDistanceAndAzimuth() {
             var lat1 = markers[0].getLatLng().lat;
             var lon1 = markers[0].getLatLng().lng;
@@ -156,19 +155,24 @@
             .done(function(response) {
                 var distance = response.distance;
                 var azimuth = response.azimuth;
-                var points = response.points;
-
+                
                 // Hapus garis sebelumnya jika ada
                 if (lines) map.removeLayer(lines);
 
-                // Gambarkan garis menggunakan L.Geodesic untuk akurasi lebih baik
-                lines = L.Geodesic([ [lat1, lon1], [lat2, lon2] ], {color: 'blue', weight: 3}).addTo(map);
+                // Gambarkan garis menggunakan Leaflet.Geodesic
+                lines = L.geodesic(
+                    [
+                        [lat1, lon1],
+                        [lat2, lon2]
+                    ],
+                    { color: 'blue', weight: 3 }
+                ).addTo(map);
 
                 // Tambahkan popup di tengah garis
                 var midPoint = lines.getBounds().getCenter();
                 lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
 
-                // Update jarak dan azimuth di sidebar
+                // Update sidebar
                 updateTotalDistance(distance);
                 updateAzimuth(azimuth);
             })
@@ -176,7 +180,6 @@
                 alert("Terjadi kesalahan: " + error.responseJSON.error);
             });
         }
-
 
         // Update total jarak di sidebar
         function updateTotalDistance(distance) {
