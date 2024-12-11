@@ -92,7 +92,7 @@
             marker.bindPopup(`<b>Koordinat:</b> ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`).openPopup();
             markers.push(marker);
 
-            updateSidebarWithMarkerInfo(latlng.lat, latlng.lng, geocode.name || "Lokasi Pencarian");
+            updateSidebarWithMarkerInfo(latlng.lat, latlng.lng);
 
             map.setView(latlng, 10);
 
@@ -144,35 +144,29 @@
                 });
         }
 
-        // Fungsi untuk menggambar garis geodesic
+        // Hitung jarak dan azimuth
         function calculateDistanceAndAzimuth() {
             var lat1 = markers[0].getLatLng().lat;
             var lon1 = markers[0].getLatLng().lng;
             var lat2 = markers[1].getLatLng().lat;
             var lon2 = markers[1].getLatLng().lng;
 
+            // Kirim data ke Flask
             $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
             .done(function(response) {
                 var distance = response.distance;
                 var azimuth = response.azimuth;
-                
-                // Hapus garis sebelumnya jika ada
-                if (lines) map.removeLayer(lines);
+                var points = response.points;
 
-                // Gambarkan garis menggunakan Leaflet.Geodesic
-                lines = L.geodesic(
-                    [
-                        [lat1, lon1],
-                        [lat2, lon2]
-                    ],
-                    { color: 'blue', weight: 3 }
-                ).addTo(map);
+                // Gambarkan garis
+                if (lines) map.removeLayer(lines);
+                lines = L.polyline(points.map(p => L.latLng(p[0], p[1])), {color: 'blue'}).addTo(map);
 
                 // Tambahkan popup di tengah garis
                 var midPoint = lines.getBounds().getCenter();
                 lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
 
-                // Update sidebar
+                // Tambahkan jarak dan azimuth ke sidebar
                 updateTotalDistance(distance);
                 updateAzimuth(azimuth);
             })
@@ -200,14 +194,14 @@
             if (lines) {
                 map.removeLayer(lines);
             }
-        
+
             markers = [];
             lines = null;
-        
+
             document.getElementById('marker-list').innerHTML = '<li>Belum ada marker.</li>';
             document.getElementById('total-distance').innerText = '0 km';
-            document.getElementById('azimuth').innerText = '0°'; // Reset azimuth
-        };        
+            document.getElementById('azimuth').innerText = '0°';
+        };
     </script>
 </body>
 </html>
