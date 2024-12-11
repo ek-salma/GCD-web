@@ -8,6 +8,7 @@
     <!-- Leaflet Control Search Plugin -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-geodesic/1.0.0/leaflet-geodesic.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="static/style.css" /> 
     <style>
@@ -143,29 +144,31 @@
                     markerList.appendChild(newItem);
                 });
         }
-        // Hitung jarak dan azimuth
+
+        // Fungsi untuk menghitung jarak dan azimuth
         function calculateDistanceAndAzimuth() {
             var lat1 = markers[0].getLatLng().lat;
             var lon1 = markers[0].getLatLng().lng;
             var lat2 = markers[1].getLatLng().lat;
             var lon2 = markers[1].getLatLng().lng;
 
-            // Kirim data ke Flask
             $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
             .done(function(response) {
                 var distance = response.distance;
-                var azimuth = response.azimuth;  // Ambil nilai azimuth dari Flask
+                var azimuth = response.azimuth;
                 var points = response.points;
 
-                // Gambarkan garis
+                // Hapus garis sebelumnya jika ada
                 if (lines) map.removeLayer(lines);
-                lines = L.polyline(points.map(p => L.latLng(p[0], p[1])), {color: 'blue'}).addTo(map);
+
+                // Gambarkan garis menggunakan L.Geodesic untuk akurasi lebih baik
+                lines = L.Geodesic([ [lat1, lon1], [lat2, lon2] ], {color: 'blue', weight: 3}).addTo(map);
 
                 // Tambahkan popup di tengah garis
                 var midPoint = lines.getBounds().getCenter();
                 lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
 
-                // Tambahkan jarak dan azimuth ke sidebar
+                // Update jarak dan azimuth di sidebar
                 updateTotalDistance(distance);
                 updateAzimuth(azimuth);
             })
@@ -173,6 +176,7 @@
                 alert("Terjadi kesalahan: " + error.responseJSON.error);
             });
         }
+
 
         // Update total jarak di sidebar
         function updateTotalDistance(distance) {
