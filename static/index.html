@@ -5,9 +5,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Leaflet Control Search Plugin -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <link rel="stylesheet" href="static/style.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="static/style.css" /> 
     <style>
         body {
             margin: 0;
@@ -32,18 +34,41 @@
 </head>
 <body>
     <div class="container">
+        <!-- Sidebar -->
         <div class="sidebar">
             <h3>Great Circle Map</h3>
             <button id="resetButton">Reset</button>
+
             <h4>Daftar Marker:</h4>
             <ul id="marker-list">
                 <li>Belum ada marker.</li>
             </ul>
+
             <h4>Total Jarak:</h4>
             <p id="total-distance">0 km</p>
+
             <h4>Azimuth:</h4>
             <p id="azimuth">0°</p>
+
+
+            <h4>Petunjuk:</h4>
+            <ol>
+                <li>Klik pada peta untuk menambahkan marker.</li>
+                <li>Gunakan pencarian di peta untuk menambahkan marker berdasarkan nama lokasi.</li>
+                <li>Setelah menambahkan dua marker, garis dan informasi jarak akan muncul di peta.</li>
+                <li>Tekan tombol Reset untuk menghapus semua marker dan garis.</li>
+            </ol>
+
+            <h4>Tentang Aplikasi:</h4>
+            <p>
+                Aplikasi ini menghitung jarak lingkaran besar (great circle distance) antara dua lokasi di permukaan bumi.
+                Data geolokasi diambil dari OpenStreetMap.
+            </p>
+
+            <p>Eka Salma Salsabilla (5016211050)</p>
         </div>
+
+        <!-- Map -->
         <div id="map"></div>
     </div>
 
@@ -54,6 +79,7 @@
         var markers = [];
         var lines = null;
 
+        // Tambahkan pencarian ke peta
         var geocoderControl = L.Control.geocoder({
             defaultMarkGeocode: false
         })
@@ -61,6 +87,7 @@
             var geocode = e.geocode;
             var latlng = geocode.center;
 
+            // Tambahkan marker dengan popup informasi lokasi
             var marker = L.marker(latlng).addTo(map);
             marker.bindPopup(`<b>Koordinat:</b> ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`).openPopup();
             markers.push(marker);
@@ -75,10 +102,12 @@
         });
         geocoderControl.addTo(map);
 
+        // Klik peta untuk menambahkan marker
         map.on('click', function(e) {
             if (markers.length < 2) {
                 var latlng = e.latlng;
 
+                // Tambahkan marker dengan popup informasi lokasi
                 var marker = L.marker(latlng).addTo(map);
                 marker.bindPopup(`<b>Koordinat:</b> ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`).openPopup();
                 markers.push(marker);
@@ -91,12 +120,14 @@
             }
         });
 
+        // Fungsi untuk memperbarui informasi di sidebar
         function updateSidebarWithMarkerInfo(lat, lng) {
             const markerList = document.getElementById('marker-list');
             if (markers.length === 1) {
-                markerList.innerHTML = ''; 
+                markerList.innerHTML = ''; // Hapus teks default "Belum ada marker"
             }
 
+            // Lakukan reverse geocoding untuk mendapatkan nama lokasi
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`)
                 .then(response => response.json())
                 .then(data => {
@@ -112,25 +143,29 @@
                     markerList.appendChild(newItem);
                 });
         }
-
+        // Hitung jarak dan azimuth
         function calculateDistanceAndAzimuth() {
             var lat1 = markers[0].getLatLng().lat;
             var lon1 = markers[0].getLatLng().lng;
             var lat2 = markers[1].getLatLng().lat;
             var lon2 = markers[1].getLatLng().lng;
 
+            // Kirim data ke Flask
             $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
             .done(function(response) {
                 var distance = response.distance;
-                var azimuth = response.azimuth;
+                var azimuth = response.azimuth;  // Ambil nilai azimuth dari Flask
                 var points = response.points;
 
+                // Gambarkan garis
                 if (lines) map.removeLayer(lines);
                 lines = L.polyline(points.map(p => L.latLng(p[0], p[1])), {color: 'blue'}).addTo(map);
 
+                // Tambahkan popup di tengah garis
                 var midPoint = lines.getBounds().getCenter();
                 lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
 
+                // Tambahkan jarak dan azimuth ke sidebar
                 updateTotalDistance(distance);
                 updateAzimuth(azimuth);
             })
@@ -139,11 +174,13 @@
             });
         }
 
+        // Update total jarak di sidebar
         function updateTotalDistance(distance) {
             const totalDistanceElement = document.getElementById('total-distance');
             totalDistanceElement.innerText = `${distance.toFixed(2)} km`;
         }
 
+        // Update azimuth di sidebar
         function updateAzimuth(azimuth) {
             const azimuthElement = document.getElementById('azimuth');
             azimuthElement.innerText = `${azimuth.toFixed(2)}°`;
@@ -156,14 +193,14 @@
             if (lines) {
                 map.removeLayer(lines);
             }
-
+        
             markers = [];
             lines = null;
-
+        
             document.getElementById('marker-list').innerHTML = '<li>Belum ada marker.</li>';
             document.getElementById('total-distance').innerText = '0 km';
-            document.getElementById('azimuth').innerText = '0°';
-        };
+            document.getElementById('azimuth').innerText = '0°'; // Reset azimuth
+        };        
     </script>
 </body>
 </html>
