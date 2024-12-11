@@ -8,7 +8,6 @@
     <!-- Leaflet Control Search Plugin -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-geodesic/1.0.0/leaflet-geodesic.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="static/style.css" /> 
     <style>
@@ -144,36 +143,48 @@
                 });
         }
 
-        // Hitung jarak dan azimuth
-        function calculateDistanceAndAzimuth() {
-            var lat1 = markers[0].getLatLng().lat;
-            var lon1 = markers[0].getLatLng().lng;
-            var lat2 = markers[1].getLatLng().lat;
-            var lon2 = markers[1].getLatLng().lng;
+        // Update calculateDistanceAndAzimuth function to fix line crossing issue
+    function calculateDistanceAndAzimuth() {
+        var lat1 = markers[0].getLatLng().lat;
+        var lon1 = markers[0].getLatLng().lng;
+        var lat2 = markers[1].getLatLng().lat;
+        var lon2 = markers[1].getLatLng().lng;
 
-            // Kirim data ke Flask
-            $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
-            .done(function(response) {
-                var distance = response.distance;
-                var azimuth = response.azimuth;
-                var points = response.points;
+        // Kirim data ke Flask
+        $.post("https://great-circle-map.up.railway.app/calculate", { lat1, lon1, lat2, lon2 })
+        .done(function(response) {
+            var distance = response.distance;
+            var azimuth = response.azimuth;  // Ambil nilai azimuth dari Flask
+            var points = response.points;
 
-                // Gambarkan garis
-                if (lines) map.removeLayer(lines);
-                lines = L.polyline(points.map(p => L.latLng(p[0], p[1])), {color: 'blue'}).addTo(map);
-
-                // Tambahkan popup di tengah garis
-                var midPoint = lines.getBounds().getCenter();
-                lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
-
-                // Tambahkan jarak dan azimuth ke sidebar
-                updateTotalDistance(distance);
-                updateAzimuth(azimuth);
-            })
-            .fail(function(error) {
-                alert("Terjadi kesalahan: " + error.responseJSON.error);
+            // Perbaiki koordinat untuk garis yang melewati batas -180°/180°
+            points = points.map(p => {
+                let lng = p[1];
+                if (lon1 > 0 && lon2 < 0 && Math.abs(lon1 - lon2) > 180) {
+                    lng = lng < 0 ? lng + 360 : lng;
+                } else if (lon1 < 0 && lon2 > 0 && Math.abs(lon1 - lon2) > 180) {
+                    lng = lng > 0 ? lng - 360 : lng;
+                }
+                return [p[0], lng];
             });
-        }
+
+            // Gambarkan garis
+            if (lines) map.removeLayer(lines);
+            lines = L.polyline(points.map(p => L.latLng(p[0], p[1])), {color: 'blue'}).addTo(map);
+
+            // Tambahkan popup di tengah garis
+            var midPoint = lines.getBounds().getCenter();
+            lines.bindPopup(`<b>Jarak:</b> ${distance.toFixed(2)} km<br><b>Azimuth:</b> ${azimuth.toFixed(2)}°`).openPopup();
+
+            // Tambahkan jarak dan azimuth ke sidebar
+            updateTotalDistance(distance);
+            updateAzimuth(azimuth);
+        })
+        .fail(function(error) {
+            alert("Terjadi kesalahan: " + error.responseJSON.error);
+        });
+    }
+
 
         // Update total jarak di sidebar
         function updateTotalDistance(distance) {
